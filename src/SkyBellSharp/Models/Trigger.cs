@@ -15,6 +15,9 @@ public sealed class SkyBellTrigger
     [JsonPropertyName("type")] public string? Type { get; set; }
 
     [JsonPropertyName("enabled")] public bool Enabled { get; set; }
+
+    /// <summary>Webhook settings. Returned on creation; the trigger list omits them.</summary>
+    [JsonPropertyName("meta_config")] public WebhookConfig? Config { get; set; }
     [JsonPropertyName("on_events")] public List<string> Events { get; set; } = new();
 
     /// <summary>Consecutive failures; the API disables a trigger after 25.</summary>
@@ -26,6 +29,15 @@ public sealed class SkyBellTrigger
     [JsonPropertyName("updated_at")] public DateTimeOffset? UpdatedAt { get; set; }
 
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>Webhook settings of a trigger (<c>meta_config</c>).</summary>
+public sealed class WebhookConfig
+{
+    [JsonPropertyName("url")] public string? Url { get; set; }
+    [JsonPropertyName("method")] public string? Method { get; set; }
+    [JsonPropertyName("header_name")] public string? HeaderName { get; set; }
+    [JsonPropertyName("header_value")] public string? HeaderValue { get; set; }
 }
 
 /// <summary>

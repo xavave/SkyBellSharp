@@ -103,6 +103,27 @@ public class RealResponseTests
     }
 
     [Fact]
+    public async Task Created_webhook_is_typed_with_its_config()
+    {
+        var (client, handler) = Create("""
+            {"error":false,"message":"Webhook trigger created.","data":{"trigger_id":"t1","client_id":"c","enabled":true,"fail_count":0,
+             "device_id":"d","account_id":"a","type":"webhook",
+             "meta_config":{"url":"https://example.com/","method":"get","header_name":"x-selftest","header_value":"1"},
+             "on_events":["vready"],"updated_at":"2026-10-14T20:28:55.903Z","created_at":"2026-10-14T20:28:55.903Z"}}
+            """);
+
+        var t = await client.CreateWebhookAsync("d", new WebhookTrigger
+        {
+            Url = "https://example.com/", Method = "get", Events = new[] { SkyBellEventTypes.VideoReady }
+        });
+
+        Assert.Equal("t1", t.TriggerId);
+        Assert.Equal("get", t.Config!.Method);
+        Assert.Equal("vready", Assert.Single(t.Events));
+        Assert.Contains("\"method\":\"get\"", handler.Bodies.Single());
+    }
+
+    [Fact]
     public async Task Api_key_management_requires_a_jwt_session()
     {
         var (client, handler) = Create();

@@ -96,11 +96,11 @@ public sealed partial class SkyBellClient
     /// SkyBell calls the URL once while creating the trigger (with the chosen method) and rejects it
     /// with HTTP 400 "Webhook trigger test failed…" unless the endpoint answers with a success status.
     /// </remarks>
-    public Task<JsonNode?> CreateWebhookAsync(string deviceId, WebhookTrigger webhook,
+    public Task<SkyBellTrigger> CreateWebhookAsync(string deviceId, WebhookTrigger webhook,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(webhook);
-        return SendForDataAsync(HttpMethod.Post, $"/api/v5/devices/{Seg(deviceId)}/triggers", webhook, cancellationToken);
+        return SendDataAsync<SkyBellTrigger>(HttpMethod.Post, $"/api/v5/devices/{Seg(deviceId)}/triggers", webhook, cancellationToken);
     }
 
     /// <summary>
