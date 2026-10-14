@@ -15,7 +15,7 @@ public sealed class SkyBellHealth
     /// <summary>Current firmware per model (trim2, hd2, slim = SkyBell Micro…).</summary>
     [JsonPropertyName("CURRENT_FIRMWARE")] public Dictionary<string, string>? CurrentFirmware { get; set; }
 
-    [JsonPropertyName("MOBILE_BETA")] public JsonElement MobileBeta { get; set; }
+    [JsonPropertyName("MOBILE_BETA")] public JsonElement? MobileBeta { get; set; }
 
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }

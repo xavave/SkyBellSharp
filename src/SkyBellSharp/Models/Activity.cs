@@ -42,7 +42,7 @@ public sealed class SkyBellActivity
     public DateTimeOffset? EventTime { get; set; }
 
     /// <summary>Day as "MM/DD/YYYY".</summary>
-    [JsonPropertyName("date")] public JsonElement Date { get; set; }
+    [JsonPropertyName("date")] public JsonElement? Date { get; set; }
 
     /// <summary>Pre-signed S3 MP4 URL (expires quickly; prefer <see cref="SkyBellClient.GetActivityVideoUrlAsync"/>).</summary>
     [JsonPropertyName("video_url")] public string? VideoUrl { get; set; }
@@ -56,8 +56,8 @@ public sealed class SkyBellActivity
     /// <summary>Pre-signed URLs attached to the event (e.g. "…_notify_preview.jpeg"), valid ~5 min.</summary>
     [JsonPropertyName("events")] public List<string>? EventUrls { get; set; }
 
-    [JsonPropertyName("edge_tags")] public JsonElement EdgeTags { get; set; }
-    [JsonPropertyName("ai_ppe")] public JsonElement AiPpe { get; set; }
+    [JsonPropertyName("edge_tags")] public JsonElement? EdgeTags { get; set; }
+    [JsonPropertyName("ai_ppe")] public JsonElement? AiPpe { get; set; }
 
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 
