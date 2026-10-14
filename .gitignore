@@ -8,3 +8,4 @@ artifacts/
 *.snupkg
 TestResults/
 appsettings.local.json
+skybell-dump/

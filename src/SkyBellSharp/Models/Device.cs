@@ -21,7 +21,7 @@ public sealed class SkyBellDevice
     [JsonPropertyName("client_id")] public string? ClientId { get; set; }
     [JsonPropertyName("serial")] public string? Serial { get; set; }
 
-    /// <summary>e.g. "Ver A:SB_TRIM2_0001".</summary>
+    /// <summary>"revision:model", e.g. "1:SKYBELL_MICRO_1000020".</summary>
     [JsonPropertyName("hardware")] public string? Hardware { get; set; }
 
     [JsonPropertyName("firmware")] public string? Firmware { get; set; }
@@ -45,6 +45,7 @@ public sealed class SkyBellDevice
     [JsonIgnore]
     public bool? IsOnline => LastConnected is null ? null : LastDisconnected is null || LastConnected > LastDisconnected;
 
+    /// <summary>Sent as a string by the API.</summary>
     [JsonPropertyName("lat")] public double? Latitude { get; set; }
     [JsonPropertyName("lon")] public double? Longitude { get; set; }
 
@@ -52,6 +53,16 @@ public sealed class SkyBellDevice
     [JsonPropertyName("shared")] public JsonNode? Shared { get; set; }
 
     [JsonIgnore] public bool IsShared => Shared is JsonValue v ? !(v.TryGetValue<bool>(out var b) && !b) : Shared is not null;
+
+    /// <summary>True when the device runs the on-device rule engine instead of <see cref="BasicMotion"/>.</summary>
+    [JsonPropertyName("using_rules")] public bool? UsingRules { get; set; }
+
+    [JsonPropertyName("basic_motion")] public BasicMotionSettings? BasicMotion { get; set; }
+
+    [JsonPropertyName("location_id")] public string? LocationId { get; set; }
+
+    /// <summary>Configured tones (raw).</summary>
+    [JsonPropertyName("tones")] public JsonObject? Tones { get; set; }
 
     [JsonPropertyName("settings")] public DeviceSettings? Settings { get; set; }
     [JsonPropertyName("device_settings")] public DeviceHardwareInfo? HardwareInfo { get; set; }
@@ -95,7 +106,41 @@ public sealed class DeviceSettings
     [JsonPropertyName("force_turn")] public bool? ForceTurn { get; set; }
     [JsonPropertyName("motion_zone_config")] public MotionZoneConfig? MotionZoneConfig { get; set; }
 
+    /// <summary>Passive infrared sensor sensitivity (0..1000).</summary>
+    [JsonPropertyName("pir_sensitivity")] public double? PirSensitivity { get; set; }
+
+    [JsonPropertyName("basic_motion")] public BasicMotionSettings? BasicMotion { get; set; }
+    [JsonPropertyName("using_rules")] public bool? UsingRules { get; set; }
+    [JsonPropertyName("motion_chime")] public bool? MotionChime { get; set; }
+    [JsonPropertyName("motion_chime_volume")] public int? MotionChimeVolume { get; set; }
+    [JsonPropertyName("motion_chime_color")] public string? MotionChimeColor { get; set; }
+    [JsonPropertyName("chime_file_motion")] public string? ChimeFileMotion { get; set; }
+    [JsonPropertyName("outdoor_chime_color")] public string? OutdoorChimeColor { get; set; }
+
+    /// <summary>Telemetry check-in period, minutes.</summary>
+    [JsonPropertyName("telemetry_freq")] public int? TelemetryFrequency { get; set; }
+
+    [JsonPropertyName("aws_region")] public string? AwsRegion { get; set; }
+    [JsonPropertyName("device_lat")] public double? Latitude { get; set; }
+    [JsonPropertyName("device_lon")] public double? Longitude { get; set; }
+    [JsonPropertyName("time_zone_info")] public JsonObject? TimeZoneInfo { get; set; }
+
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>What happens on each kind of motion when the rule engine is not used.</summary>
+public sealed class BasicMotionSettings
+{
+    [JsonPropertyName("motion_notify")] public bool? MotionNotify { get; set; }
+    [JsonPropertyName("motion_record")] public bool? MotionRecord { get; set; }
+
+    /// <summary>Human body detection.</summary>
+    [JsonPropertyName("hbd_notify")] public bool? HumanBodyNotify { get; set; }
+    [JsonPropertyName("hbd_record")] public bool? HumanBodyRecord { get; set; }
+
+    /// <summary>Face detection.</summary>
+    [JsonPropertyName("fd_notify")] public bool? FaceNotify { get; set; }
+    [JsonPropertyName("fd_record")] public bool? FaceRecord { get; set; }
 }
 
 /// <summary>Hardware / firmware information (<c>device_settings</c>).</summary>
@@ -108,6 +153,7 @@ public sealed class DeviceHardwareInfo
     [JsonPropertyName("firmware_version")] public string? FirmwareVersion { get; set; }
     [JsonPropertyName("firmware_patch")] public int? FirmwarePatch { get; set; }
     [JsonPropertyName("firmware_major_release")] public int? FirmwareMajorRelease { get; set; }
+    [JsonPropertyName("firmware_minor_release")] public int? FirmwareMinorRelease { get; set; }
     [JsonPropertyName("hardware_version")] public string? HardwareVersion { get; set; }
     [JsonPropertyName("OTA_type")] public string? OtaType { get; set; }
     [JsonPropertyName("OTA_version")] public string? OtaVersion { get; set; }
@@ -139,6 +185,21 @@ public sealed class DeviceTelemetry
 
     /// <summary>GHz, e.g. "2.437".</summary>
     [JsonPropertyName("network_frequency")] public string? NetworkFrequency { get; set; }
+
+    /// <summary>LAN address of the device (also the source of its UDP broadcasts).</summary>
+    [JsonPropertyName("ip_address")] public string? IpAddress { get; set; }
+    [JsonPropertyName("ip_subnet")] public string? IpSubnet { get; set; }
+    [JsonPropertyName("gateway")] public string? Gateway { get; set; }
+    [JsonPropertyName("ip_address_public")] public string? PublicIpAddress { get; set; }
+
+    /// <summary>Millivolts (e.g. 4419 = 4.419 V).</summary>
+    [JsonPropertyName("battery_voltage")] public int? BatteryVoltage { get; set; }
+
+    [JsonPropertyName("free_memory")] public long? FreeMemory { get; set; }
+    [JsonPropertyName("available_memory")] public long? AvailableMemory { get; set; }
+
+    /// <summary>Upload speed test summary, as reported by the device.</summary>
+    [JsonPropertyName("upload_stats")] public string? UploadStats { get; set; }
 
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
@@ -231,6 +292,17 @@ public sealed class DeviceSettingsUpdate
     [JsonPropertyName("chime_file")] public string? ChimeFile { get; set; }
 
     [JsonPropertyName("motion_zone_config")] public MotionZoneConfig? MotionZoneConfig { get; set; }
+
+    /// <summary>Passive infrared sensor sensitivity (0..1000).</summary>
+    [JsonPropertyName("pir_sensitivity")] public int? PirSensitivity { get; set; }
+
+    /// <summary>Notify / record per motion kind (used when the rule engine is off).</summary>
+    [JsonPropertyName("basic_motion")] public BasicMotionSettings? BasicMotion { get; set; }
+
+    /// <summary>Play a tone on motion.</summary>
+    [JsonPropertyName("motion_chime")] public bool? MotionChime { get; set; }
+    [JsonPropertyName("motion_chime_volume")] public int? MotionChimeVolume { get; set; }
+    [JsonPropertyName("chime_file_motion")] public string? ChimeFileMotion { get; set; }
 
     /// <summary>Additional raw settings merged into the request body.</summary>
     [JsonIgnore] public JsonObject? Extra { get; set; }

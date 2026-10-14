@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Nodes;
 using SkyBellSharp.Models;
 
 namespace SkyBellSharp;
@@ -10,9 +12,37 @@ public sealed partial class SkyBellClient
     //  Activity history
     // =================================================================
 
-    /// <summary><c>GET /api/v5/activity</c> — one page of events, newest first.</summary>
-    public Task<ActivityPage> GetActivitiesAsync(ActivityQuery? query = null, CancellationToken cancellationToken = default) =>
-        GetDataAsync<ActivityPage>("/api/v5/activity" + (query ?? new ActivityQuery()).ToQueryString(), cancellationToken);
+    /// <summary>
+    /// <c>GET /api/v5/activity</c> — events, newest first. Without <see cref="ActivityQuery.Start"/>
+    /// the API returns the last 7 days only.
+    /// </summary>
+    /// <remarks>
+    /// The production API currently ignores <c>limit</c>/<c>offset</c> and returns the whole range
+    /// (<c>limit: 100000</c>); this method then applies <see cref="ActivityQuery.Offset"/> and
+    /// <see cref="ActivityQuery.Limit"/> client-side so paging behaves as documented.
+    /// <see cref="ActivityPage.Count"/> is always the total.
+    /// </remarks>
+    public async Task<ActivityPage> GetActivitiesAsync(ActivityQuery? query = null, CancellationToken cancellationToken = default)
+    {
+        query ??= new ActivityQuery();
+        var page = await GetDataAsync<ActivityPage>("/api/v5/activity" + query.ToQueryString(), cancellationToken)
+            .ConfigureAwait(false);
+
+        var requestedOffset = query.Offset ?? 0;
+        var serverIgnoredOffset = requestedOffset > 0 && (page.Offset ?? 0) != requestedOffset;
+        var serverIgnoredLimit = query.Limit is { } l && page.Rows.Count > l;
+
+        if (serverIgnoredOffset || serverIgnoredLimit)
+        {
+            IEnumerable<SkyBellActivity> rows = page.Rows;
+            if (serverIgnoredOffset) rows = rows.Skip(requestedOffset);
+            if (query.Limit is { } limit) rows = rows.Take(limit);
+            page.Rows = rows.ToList();
+            page.Offset = requestedOffset;
+            page.Limit = query.Limit;
+        }
+        return page;
+    }
 
     /// <summary>
     /// Enumerates all matching events, fetching pages of <paramref name="pageSize"/> on demand.
@@ -41,7 +71,8 @@ public sealed partial class SkyBellClient
             foreach (var a in page.Rows) yield return a;
 
             offset += page.Rows.Count;
-            if (page.Rows.Count < pageSize || (page.Count > 0 && offset >= page.Count)) yield break;
+            if (page.Rows.Count == 0 || page.Rows.Count < pageSize || (page.Count > 0 && offset >= page.Count))
+                yield break;
         }
     }
 
@@ -68,9 +99,52 @@ public sealed partial class SkyBellClient
         }, cancellationToken);
     }
 
-    /// <summary><c>GET /api/v5/activity/day</c> — short summary of recent events grouped by day.</summary>
-    public Task<ActivityDaySummary> GetActivityDaySummaryAsync(CancellationToken cancellationToken = default) =>
-        GetDataAsync<ActivityDaySummary>("/api/v5/activity/day", cancellationToken);
+    /// <summary>
+    /// <c>GET /api/v5/activity/day</c> — number of events per day, most recent first.
+    /// (The production API returns <c>[{ activity_day, event_count }]</c>; the documented
+    /// <c>{ days: { "MM/DD/YYYY": [...] } }</c> shape is also accepted.)
+    /// </summary>
+    public async Task<IReadOnlyList<ActivityDayCount>> GetActivityDaysAsync(CancellationToken cancellationToken = default)
+    {
+        const string path = "/api/v5/activity/day";
+        var data = await SendForDataAsync(HttpMethod.Get, path, null, cancellationToken).ConfigureAwait(false);
+        var result = new List<ActivityDayCount>();
+
+        if (data is JsonArray rows)
+        {
+            foreach (var row in rows.OfType<JsonObject>())
+            {
+                var day = ParseDay(row["activity_day"] ?? row["day"] ?? row["date"]);
+                var count = row["event_count"] ?? row["count"];
+                if (day is { } d && TryInt(count, out var n)) result.Add(new ActivityDayCount(d, n));
+            }
+        }
+        else if (data is JsonObject obj && obj["days"] is JsonObject days)
+        {
+            foreach (var (key, list) in days)
+                if (ParseDay(JsonValue.Create(key)) is { } d)
+                    result.Add(new ActivityDayCount(d, (list as JsonArray)?.Count ?? 0));
+        }
+
+        return result.OrderByDescending(r => r.Day).ToList();
+
+        static DateOnly? ParseDay(JsonNode? node)
+        {
+            var s = node is JsonValue v && v.TryGetValue<string>(out var str) ? str : null;
+            if (s is null) return null;
+            string[] formats = { "yyyy-MM-dd", "MM/dd/yyyy" };
+            return DateOnly.TryParseExact(s, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)
+                ? d : null;
+        }
+
+        static bool TryInt(JsonNode? node, out int value)
+        {
+            value = 0;
+            if (node is not JsonValue v) return false;
+            if (v.TryGetValue(out int i)) { value = i; return true; }
+            return v.TryGetValue<string>(out var s) && int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+        }
+    }
 
     /// <summary>
     /// <c>GET /api/v5/activity/{id}/video</c> — pre-signed S3 URL of the event's MP4.

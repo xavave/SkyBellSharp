@@ -8,6 +8,10 @@ public sealed class SkyBellUser
 {
     [JsonPropertyName("email")] public string? Email { get; set; }
     [JsonPropertyName("account_id")] public string? AccountId { get; set; }
+    [JsonPropertyName("fname")] public string? FirstName { get; set; }
+    [JsonPropertyName("lname")] public string? LastName { get; set; }
+    [JsonPropertyName("user_since")] public DateTimeOffset? UserSince { get; set; }
+    [JsonPropertyName("eula_accepted")] public DateTimeOffset? EulaAccepted { get; set; }
 
     /// <summary>"free" or "premium".</summary>
     [JsonPropertyName("premium_status")] public string? PremiumStatus { get; set; }

@@ -13,10 +13,19 @@ internal static partial class Dump
 {
     private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
 
-    // Property names whose values are secrets or personal data.
-    [GeneratedRegex("token|key|secret|password|credential|signature|invite|certificate|email|serial|mac|essid|ssid|phone|full_name|street|zipcode|^lat|^lon|latitude|longitude|account_id|client_id|psk|access",
+    // Property names whose values are secrets or personal data (substring match).
+    [GeneratedRegex("token|key|secret|password|credential|signature|invite|certificate|email|serial|mac|essid|ssid|phone|full_name|fname|lname|street|zipcode|lat|lon|lng|ip_address|gateway|subnet|account_id|client_id|psk|access|place",
         RegexOptions.IgnoreCase)]
     private static partial Regex SensitiveName();
+
+    [GeneratedRegex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", RegexOptions.IgnoreCase)]
+    private static partial Regex Uuid();
+
+    [GeneratedRegex(@"\b\d{1,3}(\.\d{1,3}){3}\b")]
+    private static partial Regex IPv4();
+
+    /// <summary>Replaces UUIDs and IPv4 addresses anywhere in a string.</summary>
+    private static string Scrub(string s) => IPv4().Replace(Uuid().Replace(s, "<uuid>"), "<ip>");
 
     public static async Task RunAsync(SkyBellClient client, string folder)
     {
@@ -60,7 +69,7 @@ internal static partial class Dump
         {
             raw = await client.GetRawAsync(path);
             output = Redact(raw) ?? JsonValue.Create("(empty)")!;
-            Console.WriteLine($"  ok    {path}");
+            Console.WriteLine($"  ok    {Scrub(path)}");
         }
         catch (SkyBellApiException ex)
         {
@@ -70,11 +79,11 @@ internal static partial class Dump
                 ["message"] = ex.ApiMessage ?? ex.Message,
                 ["body"] = Redact(TryParse(ex.ResponseBody))
             };
-            Console.WriteLine($"  {(int?)ex.StatusCode,-5} {path}");
+            Console.WriteLine($"  {(int?)ex.StatusCode,-5} {Scrub(path)}");
         }
 
         await File.WriteAllTextAsync(Path.Combine(folder, name + ".json"),
-            new JsonObject { ["request"] = "GET " + path, ["response"] = output }.ToJsonString(Indented));
+            new JsonObject { ["request"] = "GET " + Scrub(path), ["response"] = output }.ToJsonString(Indented));
         return raw;
     }
 
@@ -111,15 +120,14 @@ internal static partial class Dump
                 if (s.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 {
                     var q = s.IndexOf('?');
-                    var url = q < 0 ? s : s[..q] + "?<query>";
-                    return JsonValue.Create(Regex.Replace(url,
-                        "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", "<uuid>", RegexOptions.IgnoreCase));
+                    return JsonValue.Create(Scrub(q < 0 ? s : s[..q] + "?<query>"));
                 }
                 if (s.Length > 120) return JsonValue.Create($"<{s.Length} chars>");
-                return JsonValue.Create(s);
+                return JsonValue.Create(Scrub(s));
 
-            case JsonValue when name is not null && SensitiveName().IsMatch(name):
-                return JsonValue.Create("<redacted number/bool>");
+            case JsonValue v2 when name is not null && SensitiveName().IsMatch(name)
+                                   && !v2.TryGetValue<bool>(out _):
+                return JsonValue.Create("<redacted number>");
 
             default:
                 return node?.DeepClone();

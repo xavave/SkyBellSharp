@@ -193,18 +193,37 @@ public sealed partial class SkyBellClient
     //  On-device rules
     // =================================================================
 
-    /// <summary><c>GET /api/v5/devices/{id}/rules</c> — rule-engine rules of a device (raw JSON).</summary>
-    public Task<JsonNode?> GetDeviceRulesAsync(string deviceId, CancellationToken cancellationToken = default) =>
-        SendForDataAsync(HttpMethod.Get, $"/api/v5/devices/{Seg(deviceId)}/rules", null, cancellationToken);
+    /// <summary>
+    /// <c>GET /api/v5/devices/{id}/rules</c> — rules of the on-device rule engine
+    /// (see <see cref="SkyBellDevice.UsingRules"/>).
+    /// </summary>
+    public async Task<IReadOnlyList<SkyBellRule>> GetDeviceRulesAsync(string deviceId, CancellationToken cancellationToken = default)
+    {
+        var path = $"/api/v5/devices/{Seg(deviceId)}/rules";
+        var data = await SendForDataAsync(HttpMethod.Get, path, null, cancellationToken).ConfigureAwait(false);
+        var rules = data is JsonObject o ? o["rules"] as JsonArray : data as JsonArray;
+        return rules is null ? Array.Empty<SkyBellRule>() : (IReadOnlyList<SkyBellRule>)ConvertData<List<SkyBellRule>>(rules, path);
+    }
 
     /// <summary>
-    /// <c>GET /api/v5/rules</c> — featured rule sets by name ("Human Detection"…), raw JSON.
+    /// <c>GET /api/v5/rules</c> — featured rule sets by name ("Base Rules", "Face Detection Record"…).
     /// No authentication needed.
     /// </summary>
-    public async Task<JsonObject> GetDefaultRulesAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<SkyBellRule>>> GetDefaultRuleSetsAsync(
+        CancellationToken cancellationToken = default)
     {
-        var data = await SendForDataAsync(HttpMethod.Get, "/api/v5/rules", null, cancellationToken).ConfigureAwait(false);
-        return data as JsonObject ?? new JsonObject();
+        const string path = "/api/v5/rules";
+        var data = await SendForDataAsync(HttpMethod.Get, path, null, cancellationToken).ConfigureAwait(false);
+        var result = new Dictionary<string, IReadOnlyList<SkyBellRule>>();
+        if (data is not JsonObject sets) return result;
+
+        foreach (var (name, value) in sets)
+        {
+            // Production: name -> [rules]; documented: name -> { rules: [rules] }.
+            var rules = value as JsonArray ?? (value as JsonObject)?["rules"] as JsonArray;
+            if (rules is not null) result[name] = ConvertData<List<SkyBellRule>>(rules, path);
+        }
+        return result;
     }
 
     // =================================================================

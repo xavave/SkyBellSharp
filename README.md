@@ -43,7 +43,7 @@ var door = devices[0];
 var snapshot = await client.GetSnapshotAsync(door.Id);
 await File.WriteAllBytesAsync("door.jpg", snapshot.Jpeg);
 
-// Last doorbell presses
+// Last doorbell presses (last 7 days unless Start is set)
 var page = await client.GetActivitiesAsync(new ActivityQuery
 {
     DeviceId = door.Id,
@@ -136,6 +136,20 @@ JsonNode? shares = await client.GetRawAsync("/api/v5/shares");
 ```
 
 Returns the whole JSON response (envelope included) for endpoints or fields the models do not cover.
+
+## Production API notes
+
+Observed on the live API (v1.52), which differs from the published docs (v1.39):
+
+- `GET /api/v5/activity` returns the **last 7 days** when no `start` is given, and ignores
+  `limit`/`offset` (`limit: 100000`): `GetActivitiesAsync` applies them client-side.
+  Previews (`image`) are only returned for ranges within one day (`ImagesIncluded`).
+- `video_url` is now an API path (`/activity/{id}/video`); use `GetActivityVideoUrlAsync`.
+- `GET /api/v5/activity/day` returns `[{ activity_day, event_count }]` → `GetActivityDaysAsync`.
+- `GET /api/v5/rules` returns `name -> [rules]`; device rules are under `data.rules`.
+- Device `lat`/`lon` are strings; settings include `basic_motion`, `pir_sensitivity`, motion chime
+  options; telemetry includes LAN/public IP, battery voltage and memory.
+- `/api/v5/user/api_access` requires a JWT session (401 "Please login first." with an API key).
 
 ## Error handling
 

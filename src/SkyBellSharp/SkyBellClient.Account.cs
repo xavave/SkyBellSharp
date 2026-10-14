@@ -71,9 +71,13 @@ public sealed partial class SkyBellClient
     //  Personal API key (needs a JWT session)
     // =================================================================
 
-    /// <summary><c>GET /api/v5/user/api_access</c> — current personal API key, or null if none.</summary>
+    /// <summary>
+    /// <c>GET /api/v5/user/api_access</c> — current personal API key, or null if none.
+    /// Requires a JWT session (the API answers 401 "Please login first." to API-key clients).
+    /// </summary>
     public async Task<string?> GetApiKeyAsync(CancellationToken cancellationToken = default)
     {
+        EnsureJwt();
         var data = await SendForDataAsync(HttpMethod.Get, "/api/v5/user/api_access", null, cancellationToken,
             allowErrorFlag: true, notFoundIsNull: true).ConfigureAwait(false);
         return ExtractApiKey(data);
@@ -85,6 +89,7 @@ public sealed partial class SkyBellClient
     /// </summary>
     public async Task<string> CreateApiKeyAsync(CancellationToken cancellationToken = default)
     {
+        EnsureJwt();
         var data = await SendForDataAsync(HttpMethod.Post, "/api/v5/user/api_access", new { }, cancellationToken)
             .ConfigureAwait(false);
         return ExtractApiKey(data)
@@ -97,9 +102,19 @@ public sealed partial class SkyBellClient
         await GetApiKeyAsync(cancellationToken).ConfigureAwait(false)
         ?? await CreateApiKeyAsync(cancellationToken).ConfigureAwait(false);
 
-    /// <summary><c>DELETE /api/v5/user/api_access</c> — revokes the personal API key.</summary>
-    public Task DeleteApiKeyAsync(CancellationToken cancellationToken = default) =>
-        SendForDataAsync(HttpMethod.Delete, "/api/v5/user/api_access", null, cancellationToken);
+    /// <summary><c>DELETE /api/v5/user/api_access</c> — revokes the personal API key (JWT session required).</summary>
+    public Task DeleteApiKeyAsync(CancellationToken cancellationToken = default)
+    {
+        EnsureJwt();
+        return SendForDataAsync(HttpMethod.Delete, "/api/v5/user/api_access", null, cancellationToken);
+    }
+
+    private void EnsureJwt()
+    {
+        if (!Authenticator.IsJwt)
+            throw new InvalidOperationException(
+                "Managing the personal API key requires an email/password (JWT) session, not an API key.");
+    }
 
     /// <summary>
     /// The response format of <c>/user/api_access</c> is undocumented: accepts <c>data</c> as a

@@ -44,8 +44,20 @@ public sealed class SkyBellActivity
     /// <summary>Day as "MM/DD/YYYY".</summary>
     [JsonPropertyName("date")] public JsonElement? Date { get; set; }
 
-    /// <summary>Pre-signed S3 MP4 URL (expires quickly; prefer <see cref="SkyBellClient.GetActivityVideoUrlAsync"/>).</summary>
+    /// <summary>
+    /// API path of the video, e.g. "/activity/{id}/video" (older responses gave a pre-signed S3 URL).
+    /// Use <see cref="SkyBellClient.GetActivityVideoUrlAsync"/> to get a downloadable URL.
+    /// </summary>
     [JsonPropertyName("video_url")] public string? VideoUrl { get; set; }
+
+    /// <summary>True once the clip has been uploaded and can be downloaded.</summary>
+    [JsonPropertyName("video_ready")] public bool? VideoReady { get; set; }
+
+    /// <summary>Clip size in bytes.</summary>
+    [JsonPropertyName("video_size")] public long? VideoSize { get; set; }
+
+    [JsonPropertyName("video_ready_time")] public DateTimeOffset? VideoReadyTime { get; set; }
+    [JsonPropertyName("created_at")] public DateTimeOffset? CreatedAt { get; set; }
 
     /// <summary>
     /// Base64 JPEG preview. Only returned when the queried range fits in a single day and
@@ -56,7 +68,8 @@ public sealed class SkyBellActivity
     /// <summary>Pre-signed URLs attached to the event (e.g. "…_notify_preview.jpeg"), valid ~5 min.</summary>
     [JsonPropertyName("events")] public List<string>? EventUrls { get; set; }
 
-    [JsonPropertyName("edge_tags")] public JsonElement? EdgeTags { get; set; }
+    /// <summary>What the device detected, e.g. ["motion", "lstream"].</summary>
+    [JsonPropertyName("edge_tags")] public List<string>? EdgeTags { get; set; }
     [JsonPropertyName("ai_ppe")] public JsonElement? AiPpe { get; set; }
 
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
@@ -84,6 +97,17 @@ public sealed class ActivityPage
 
     [JsonPropertyName("rows")] public List<SkyBellActivity> Rows { get; set; } = new();
 
+    [JsonPropertyName("offset")] public int? Offset { get; set; }
+
+    /// <summary>Limit applied by the server (it may ignore the requested one, e.g. 100000).</summary>
+    [JsonPropertyName("limit")] public int? Limit { get; set; }
+
+    /// <summary>
+    /// False when the range spans several days: the API then omits the base64 previews
+    /// ("Requested multiple days. NOT returning images.").
+    /// </summary>
+    [JsonPropertyName("imagesIncluded")] public bool? ImagesIncluded { get; set; }
+
     [JsonPropertyName("start")]
     [JsonConverter(typeof(FlexibleTimestampConverter))]
     public DateTimeOffset? Start { get; set; }
@@ -104,7 +128,9 @@ public sealed class ActivityQuery
     /// <summary>See <see cref="SkyBellEventTypes"/>.</summary>
     public string? EventType { get; set; }
 
+    /// <summary>Range start. Without it the API only returns the <b>last 7 days</b>.</summary>
     public DateTimeOffset? Start { get; set; }
+
     public DateTimeOffset? End { get; set; }
 
     /// <summary>
@@ -127,30 +153,19 @@ public sealed class ActivityQuery
     }
 }
 
-/// <summary>Short daily summary (<c>GET /api/v5/activity/day</c>).</summary>
-public sealed class ActivityDaySummary
+/// <summary>Number of events for one day (<c>GET /api/v5/activity/day</c>).</summary>
+public sealed class ActivityDayCount
 {
-    [JsonPropertyName("start")]
-    [JsonConverter(typeof(FlexibleTimestampConverter))]
-    public DateTimeOffset? Start { get; set; }
-
-    [JsonPropertyName("end")]
-    [JsonConverter(typeof(FlexibleTimestampConverter))]
-    public DateTimeOffset? End { get; set; }
-
-    [JsonPropertyName("count")] public int Count { get; set; }
-
-    /// <summary>Activities keyed by day ("MM/DD/YYYY").</summary>
-    [JsonPropertyName("days")] public Dictionary<string, List<SkyBellActivity>> Days { get; set; } = new();
-
-    /// <summary><see cref="Days"/> keyed by <see cref="DateOnly"/>.</summary>
-    public IEnumerable<KeyValuePair<DateOnly, List<SkyBellActivity>>> ByDate()
+    public ActivityDayCount(DateOnly day, int eventCount)
     {
-        foreach (var (key, list) in Days)
-            if (DateOnly.TryParseExact(key, "MM/dd/yyyy", System.Globalization.CultureInfo.InvariantCulture,
-                    System.Globalization.DateTimeStyles.None, out var d))
-                yield return new(d, list);
+        Day = day;
+        EventCount = eventCount;
     }
+
+    public DateOnly Day { get; }
+    public int EventCount { get; }
+
+    public override string ToString() => $"{Day:yyyy-MM-dd}: {EventCount}";
 }
 
 internal static class Base64Image

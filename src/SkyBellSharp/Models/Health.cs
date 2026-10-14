@@ -12,10 +12,18 @@ public sealed class SkyBellHealth
     [JsonPropertyName("VERSION")] public string? NodeVersion { get; set; }
     [JsonPropertyName("SKYBELL_API_VER")] public string? ApiVersion { get; set; }
 
+    /// <summary>Current mobile app version (a good value for <see cref="SkyBellClientOptions.AppVersion"/>).</summary>
+    [JsonPropertyName("SKYBELL_APP_VER")] public string? AppVersion { get; set; }
+
+    [JsonPropertyName("SKYBELL_FW_VER")] public string? FirmwareVersion { get; set; }
+    [JsonPropertyName("SKYBELL_CHIME_FW_VER")] public string? ChimeFirmwareVersion { get; set; }
+    [JsonPropertyName("BE1_MIGRATION_FIRMWARE")] public Dictionary<string, string>? MigrationFirmware { get; set; }
+
     /// <summary>Current firmware per model (trim2, hd2, slim = SkyBell Micro…).</summary>
     [JsonPropertyName("CURRENT_FIRMWARE")] public Dictionary<string, string>? CurrentFirmware { get; set; }
 
-    [JsonPropertyName("MOBILE_BETA")] public JsonElement? MobileBeta { get; set; }
+    /// <summary>False when the platform does not accept new users.</summary>
+    [JsonPropertyName("MOBILE_BETA")] public bool? MobileBeta { get; set; }
 
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
