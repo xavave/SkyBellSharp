@@ -5,9 +5,9 @@ namespace SkyBellSharp.Tests;
 
 public class MonitorTests
 {
-    private static string ActivityJson(string id, string type, DateTimeOffset time) => $$"""
+    private static string ActivityJson(string id, string type, DateTimeOffset time) => $$$"""
         {"error":false,"message":"OK","data":{"count":1,"rows":[
-          {"activity_id":"{{id}}","device_id":"dev","device_name":"Front Door","event_type":"{{type}}","event_time":{{time.ToUnixTimeMilliseconds()}}}]}}
+          {"activity_id":"{{{id}}}","device_id":"dev","device_name":"Front Door","event_type":"{{{type}}}","event_time":{{{time.ToUnixTimeMilliseconds()}}}}]}}
         """;
 
     [Fact]

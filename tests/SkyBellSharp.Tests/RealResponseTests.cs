@@ -34,9 +34,9 @@ public class RealResponseTests
     {
         var rows = string.Join(",", Enumerable.Range(0, 10).Select(i =>
             $$"""{"activity_id":"a{{i}}","event_type":"motion","event_time":{{1791997104335 - i * 1000}},"video_url":"/activity/a{{i}}/video","video_ready":true,"video_size":42,"edge_tags":["motion"]}"""));
-        var body = $$"""
+        var body = $$$"""
             {"error":false,"status":200,"message":"Requested multiple days. NOT returning images.",
-             "data":{"start":1791401499402,"end":1792006329402,"count":10,"rows":[{{rows}}],"offset":0,"limit":100000,"imagesIncluded":false}}
+             "data":{"start":1791401499402,"end":1792006329402,"count":10,"rows":[{{{rows}}}],"offset":0,"limit":100000,"imagesIncluded":false}}
             """;
         var (client, _) = Create(body, body);
 
