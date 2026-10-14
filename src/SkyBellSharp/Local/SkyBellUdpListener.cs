@@ -149,7 +149,10 @@ public sealed class SkyBellUdpListener : IDisposable
     /// Broadcasts a SkyBell packet on the LAN: SkyBell chimes play their tone, and listeners
     /// (including this one) receive it — handy for testing.
     /// </summary>
+    /// <param name="kind"><see cref="SkyBellUdpEventKind.ButtonPressed"/> or <see cref="SkyBellUdpEventKind.MotionDetected"/>.</param>
+    /// <param name="port">Destination UDP port (5000).</param>
     /// <param name="localAddress">Local interface to send from (null = let the OS choose).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     public static async Task BroadcastAsync(SkyBellUdpEventKind kind, int port = DefaultPort,
         IPAddress? localAddress = null, CancellationToken cancellationToken = default)
     {

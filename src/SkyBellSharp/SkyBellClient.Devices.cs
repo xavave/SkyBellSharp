@@ -95,7 +95,9 @@ public sealed partial class SkyBellClient
     /// <c>POST /api/v5/devices/{id}/videostream</c> — asks the device to start a live session and
     /// returns the KVS signaling data. Plug it into a KVS WebRTC VIEWER client.
     /// </summary>
+    /// <param name="deviceId">Device id.</param>
     /// <param name="force">Do not wait for the device acknowledgement (useful with several viewers).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     public Task<VideoStreamSession> StartLiveStreamAsync(string deviceId, bool force = false,
         CancellationToken cancellationToken = default) =>
         SendDataAsync<VideoStreamSession>(HttpMethod.Post, $"/api/v5/devices/{Seg(deviceId)}/videostream",
@@ -130,7 +132,10 @@ public sealed partial class SkyBellClient
     /// <c>POST /api/v5/devices/{id}/tone</c> — sets a tone from the SkyBell catalog. The device downloads
     /// it first, so this can take several seconds.
     /// </summary>
+    /// <param name="deviceId">Device id.</param>
+    /// <param name="toneType">What the tone is used for.</param>
     /// <param name="toneFile"><see cref="SkyBellTone.File"/> of a catalog tone.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     public Task SetToneAsync(string deviceId, ToneType toneType, string toneFile,
         CancellationToken cancellationToken = default)
     {

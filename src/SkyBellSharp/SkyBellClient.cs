@@ -82,8 +82,10 @@ public sealed partial class SkyBellClient : IDisposable
     /// without throwing on <c>error: true</c>. Useful for endpoints or fields this library does not model.
     /// Throws <see cref="SkyBellApiException"/> on non-success HTTP status.
     /// </summary>
+    /// <param name="method">HTTP method.</param>
     /// <param name="path">Path and query, e.g. "/api/v5/shares".</param>
     /// <param name="body">Optional JSON body (serialized with <see cref="SkyBellJson.Options"/>).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<JsonNode?> SendRawAsync(HttpMethod method, string path, object? body = null,
         CancellationToken cancellationToken = default)
     {
