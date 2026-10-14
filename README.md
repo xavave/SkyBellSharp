@@ -1,5 +1,3 @@
-<img src="assets/icon-512.png" alt="SkyBellSharp" width="96" align="right" />
-
 # SkyBellSharp
 
 [![CI](https://github.com/xavave/SkyBellSharp/actions/workflows/ci.yml/badge.svg)](https://github.com/xavave/SkyBellSharp/actions/workflows/ci.yml)
