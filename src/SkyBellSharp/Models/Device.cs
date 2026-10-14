@@ -304,6 +304,24 @@ public sealed class DeviceSettingsUpdate
     [JsonPropertyName("motion_chime_volume")] public int? MotionChimeVolume { get; set; }
     [JsonPropertyName("chime_file_motion")] public string? ChimeFileMotion { get; set; }
 
+    /// <summary>Hex RGB of the chime light on button press (Chime devices), e.g. "#00FF00".</summary>
+    [JsonPropertyName("outdoor_chime_color")] public string? OutdoorChimeColor { get; set; }
+
+    /// <summary>Hex RGB of the chime light on motion (Chime devices).</summary>
+    [JsonPropertyName("motion_chime_color")] public string? MotionChimeColor { get; set; }
+
+    /// <summary>Burn the date and time into recordings.</summary>
+    [JsonPropertyName("video_datetime")] public bool? VideoDateTime { get; set; }
+
+    /// <summary>Recording length of an event, seconds.</summary>
+    [JsonPropertyName("event_duration")] public int? EventDuration { get; set; }
+
+    [JsonPropertyName("audio_cmd_enabled")] public bool? AudioCommandEnabled { get; set; }
+    [JsonPropertyName("audio_alarm_enabled")] public bool? AudioAlarmEnabled { get; set; }
+
+    /// <summary>Telemetry check-in period, minutes.</summary>
+    [JsonPropertyName("telemetry_freq")] public int? TelemetryFrequency { get; set; }
+
     /// <summary>Additional raw settings merged into the request body.</summary>
     [JsonIgnore] public JsonObject? Extra { get; set; }
 

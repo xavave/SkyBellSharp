@@ -25,7 +25,7 @@ internal static partial class Dump
     private static partial Regex IPv4();
 
     /// <summary>Replaces UUIDs and IPv4 addresses anywhere in a string.</summary>
-    private static string Scrub(string s) => IPv4().Replace(Uuid().Replace(s, "<uuid>"), "<ip>");
+    internal static string Scrub(string s) => IPv4().Replace(Uuid().Replace(s, "<uuid>"), "<ip>");
 
     public static async Task RunAsync(SkyBellClient client, string folder)
     {
@@ -98,7 +98,7 @@ internal static partial class Dump
     /// Returns a redacted <b>copy</b>: sensitive values masked (shape kept), UUIDs and URL queries
     /// removed, long strings and arrays shortened.
     /// </summary>
-    private static JsonNode? Redact(JsonNode? node, string? name = null)
+    internal static JsonNode? Redact(JsonNode? node, string? name = null)
     {
         switch (node)
         {

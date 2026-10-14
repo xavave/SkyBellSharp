@@ -3,6 +3,7 @@
 //   dotnet run --project samples/SkyBellSharp.Sample -- <email> <password>        summary
 //   dotnet run --project samples/SkyBellSharp.Sample -- <api-key> dump            raw responses -> ./skybell-dump (redacted)
 //   dotnet run --project samples/SkyBellSharp.Sample -- <api-key> watch           live events (UDP + API)
+//   dotnet run --project samples/SkyBellSharp.Sample -- <api-key> selftest        reversible write tests -> ./skybell-selftest
 //   dotnet run --project samples/SkyBellSharp.Sample -- udp                       raw UDP broadcasts
 using SkyBellSharp;
 using SkyBellSharp.Local;
@@ -20,7 +21,7 @@ if (args.Length == 1 && args[0] == "udp")
     return;
 }
 
-var command = args.Length is 2 or 3 && args[^1] is "dump" or "watch" ? args[^1] : "summary";
+var command = args.Length is 2 or 3 && args[^1] is "dump" or "watch" or "selftest" ? args[^1] : "summary";
 var credentials = command == "summary" ? args : args[..^1];
 
 using var anonymous = SkyBellClient.Anonymous();
@@ -40,6 +41,10 @@ using (client)
     {
         case "dump":
             await Dump.RunAsync(client, Path.GetFullPath("skybell-dump"));
+            break;
+
+        case "selftest":
+            await SelfTest.RunAsync(client, Path.GetFullPath("skybell-selftest"));
             break;
 
         case "watch":

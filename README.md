@@ -184,12 +184,17 @@ Not covered: legacy SkyBell HD CoAP provisioning, OAuth 2.0 partner flow.
 dotnet run --project samples/SkyBellSharp.Sample -- <api-key>          # account, devices, last events
 dotnet run --project samples/SkyBellSharp.Sample -- <api-key> watch    # real-time events
 dotnet run --project samples/SkyBellSharp.Sample -- <api-key> dump     # raw responses -> ./skybell-dump
+dotnet run --project samples/SkyBellSharp.Sample -- <api-key> selftest # reversible write tests -> ./skybell-selftest
 dotnet run --project samples/SkyBellSharp.Sample -- udp                # raw UDP broadcasts
 ```
 
 `dump` only calls read-only endpoints and redacts secrets and personal data (tokens, keys,
 emails, serials, MAC addresses, coordinates, ids, signed URLs). Attaching those files to an issue
 helps fix models for undocumented responses — review them before sharing.
+
+`selftest` only performs reversible writes: it writes back the current speaker volume, takes a
+snapshot, creates then deletes a webhook and a location, and plays the button tone only after
+confirmation.
 
 ## Build & pack
 
