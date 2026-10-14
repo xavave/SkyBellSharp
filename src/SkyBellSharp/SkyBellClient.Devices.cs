@@ -41,20 +41,23 @@ public sealed partial class SkyBellClient
 
     /// <summary>
     /// <c>POST /api/v5/devices/{id}/settings</c> — only the provided settings change. An offline
-    /// device applies them when it reconnects.
+    /// device applies them when it reconnects. Returns the device settings after the update.
     /// </summary>
-    public Task UpdateSettingsAsync(string deviceId, DeviceSettingsUpdate settings,
+    public Task<DeviceSettings?> UpdateSettingsAsync(string deviceId, DeviceSettingsUpdate settings,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
         return UpdateSettingsAsync(deviceId, settings.ToJson(), cancellationToken);
     }
 
-    /// <summary><c>POST /api/v5/devices/{id}/settings</c> with a raw JSON body.</summary>
-    public Task UpdateSettingsAsync(string deviceId, JsonObject settings, CancellationToken cancellationToken = default)
+    /// <summary><c>POST /api/v5/devices/{id}/settings</c> with a raw JSON body. Returns the updated settings.</summary>
+    public async Task<DeviceSettings?> UpdateSettingsAsync(string deviceId, JsonObject settings,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        return SendForDataAsync(HttpMethod.Post, $"/api/v5/devices/{Seg(deviceId)}/settings", settings, cancellationToken);
+        var path = $"/api/v5/devices/{Seg(deviceId)}/settings";
+        var data = await SendForDataAsync(HttpMethod.Post, path, settings, cancellationToken).ConfigureAwait(false);
+        return data is JsonObject ? ConvertData<DeviceSettings>(data, path) : null;
     }
 
     /// <summary><c>POST /api/v5/devices/{id}/reboot</c> — the device reboots 10–60 s later.</summary>

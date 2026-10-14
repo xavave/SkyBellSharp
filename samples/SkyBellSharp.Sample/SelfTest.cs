@@ -19,7 +19,9 @@ namespace SkyBellSharp.Sample;
 /// </summary>
 internal static class SelfTest
 {
-    private const string WebhookUrl = "https://example.com/skybellsharp-selftest";
+    // SkyBell calls the webhook once at creation and requires a success status: example.com answers
+    // 200 to GET (405 to POST). No event data is sent anywhere else, and the trigger is deleted at once.
+    private const string WebhookUrl = "https://example.com/";
     private const string LocationName = "SkyBellSharp selftest";
 
     private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
@@ -68,6 +70,7 @@ internal static class SelfTest
             var raw = await client.SendRawAsync(HttpMethod.Post, path + "/triggers", new WebhookTrigger
             {
                 Url = WebhookUrl,
+                Method = "get",
                 Events = new[] { SkyBellEventTypes.VideoReady },
                 HeaderName = "x-selftest",
                 HeaderValue = "1"
@@ -78,7 +81,7 @@ internal static class SelfTest
             await SaveAsync(folder, "trigger_list", "GET " + path + "/triggers",
                 await client.GetRawAsync(path + "/triggers"));
             var created = triggers.FirstOrDefault(t =>
-                t.Extra is not null && JsonSerializer.Serialize(t.Extra).Contains("skybellsharp-selftest", StringComparison.Ordinal))
+                t.Extra is not null && JsonSerializer.Serialize(t.Extra).Contains("example.com", StringComparison.Ordinal))
                 ?? triggers.FirstOrDefault(t => t.Events.SequenceEqual(new[] { SkyBellEventTypes.VideoReady }));
             if (created is null)
                 throw new InvalidOperationException($"created trigger not found among {triggers.Count}");

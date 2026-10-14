@@ -92,6 +92,10 @@ public sealed partial class SkyBellClient
     /// <c>POST /api/v5/devices/{id}/triggers</c> — creates a webhook called on the selected events.
     /// The API disables a trigger after 25 consecutive failures.
     /// </summary>
+    /// <remarks>
+    /// SkyBell calls the URL once while creating the trigger (with the chosen method) and rejects it
+    /// with HTTP 400 "Webhook trigger test failed…" unless the endpoint answers with a success status.
+    /// </remarks>
     public Task<JsonNode?> CreateWebhookAsync(string deviceId, WebhookTrigger webhook,
         CancellationToken cancellationToken = default)
     {
