@@ -200,7 +200,8 @@ dotnet pack src/SkyBellSharp -c Release -o artifacts
 ## Releasing
 
 Pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`: build, tests, pack with that
-version, push to nuget.org (secret `NUGET_API_KEY`) and GitHub release with the packages.
+version, push to nuget.org through **Trusted Publishing** (short-lived key obtained with GitHub
+OIDC; secret `NUGET_USER` = nuget.org profile name) and GitHub release with the packages.
 
 ## License
 
