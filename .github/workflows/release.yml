@@ -1,0 +1,52 @@
+name: Release
+
+# Push a tag like v0.1.0 to build, test, publish to NuGet and create a GitHub release.
+#   git tag v0.1.0 && git push origin v0.1.0
+# Requires the repository secret NUGET_API_KEY (nuget.org > API Keys, scope "Push", glob "SkyBellSharp").
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Version from tag
+        id: version
+        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: dotnet build SkyBellSharp.slnx -c Release -p:Version=${{ steps.version.outputs.value }}
+
+      - name: Test
+        run: dotnet test SkyBellSharp.slnx -c Release --no-build
+
+      - name: Pack
+        run: >
+          dotnet pack src/SkyBellSharp/SkyBellSharp.csproj -c Release --no-build
+          -p:Version=${{ steps.version.outputs.value }} -o artifacts
+
+      - name: Publish to NuGet
+        run: >
+          dotnet nuget push "artifacts/*.nupkg"
+          --api-key ${{ secrets.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
+
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME" artifacts/*
+          --title "SkyBellSharp ${{ steps.version.outputs.value }}"
+          --generate-notes

@@ -6,8 +6,17 @@ namespace SkyBellSharp.Local;
 /// <summary>Kind of local UDP broadcast.</summary>
 public enum SkyBellUdpEventKind
 {
+    /// <summary>The documented "button pressed" packet.</summary>
     ButtonPressed,
+    /// <summary>The documented "motion detected" packet.</summary>
     MotionDetected,
+    /// <summary>
+    /// A SkyBell packet (length header + encrypted "Salted__" payload) whose content differs from
+    /// the two documented samples. Devices may send such packets for real events: confirm the
+    /// type through the API (see <see cref="SkyBellEventMonitor"/>).
+    /// </summary>
+    Unidentified,
+    /// <summary>Not a SkyBell packet (only reported when <see cref="SkyBellUdpListener.ReportUnknownPackets"/> is true).</summary>
     Unknown
 }
 
@@ -65,7 +74,7 @@ public sealed class SkyBellUdpListener : IDisposable
 
     public bool IsRunning => _loop is { IsCompleted: false };
 
-    /// <summary>Also report packets that are not one of the two known payloads.</summary>
+    /// <summary>Also report packets that do not look like SkyBell packets at all.</summary>
     public bool ReportUnknownPackets { get; set; }
 
     /// <summary>Raised on a thread-pool thread.</summary>
@@ -122,7 +131,18 @@ public sealed class SkyBellUdpListener : IDisposable
         var p = TrimNewline(packet);
         if (p.SequenceEqual(TrimNewline(ButtonPacket.Span))) return SkyBellUdpEventKind.ButtonPressed;
         if (p.SequenceEqual(TrimNewline(MotionPacket.Span))) return SkyBellUdpEventKind.MotionDetected;
-        return SkyBellUdpEventKind.Unknown;
+        return LooksLikeSkyBell(packet) ? SkyBellUdpEventKind.Unidentified : SkyBellUdpEventKind.Unknown;
+    }
+
+    /// <summary>
+    /// SkyBell packet layout: 32-bit little-endian length of the rest, then a base64 OpenSSL
+    /// payload starting with "Salted__" ("U2FsdGVk"), then '\n'.
+    /// </summary>
+    public static bool LooksLikeSkyBell(ReadOnlySpan<byte> packet)
+    {
+        if (packet.Length < 12) return false;
+        var length = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(packet);
+        return length == packet.Length - 4 && packet[4..].StartsWith("U2FsdGVk"u8);
     }
 
     /// <summary>

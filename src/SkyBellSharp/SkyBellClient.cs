@@ -74,6 +74,44 @@ public sealed partial class SkyBellClient : IDisposable
     }
 
     // =================================================================
+    //  Raw access (undocumented endpoints, diagnostics)
+    // =================================================================
+
+    /// <summary>
+    /// Sends an authenticated request and returns the <b>whole</b> JSON response (envelope included),
+    /// without throwing on <c>error: true</c>. Useful for endpoints or fields this library does not model.
+    /// Throws <see cref="SkyBellApiException"/> on non-success HTTP status.
+    /// </summary>
+    /// <param name="path">Path and query, e.g. "/api/v5/shares".</param>
+    /// <param name="body">Optional JSON body (serialized with <see cref="SkyBellJson.Options"/>).</param>
+    public async Task<JsonNode?> SendRawAsync(HttpMethod method, string path, object? body = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(method);
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        Func<HttpContent>? content = body is null
+            ? null
+            : () => JsonContent.Create(body, body.GetType(), options: SkyBellJson.Options);
+
+        using var resp = await SendAsync(method, path, content, cancellationToken).ConfigureAwait(false);
+        var text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        JsonNode? node = null;
+        try { if (!string.IsNullOrWhiteSpace(text)) node = JsonNode.Parse(text); }
+        catch (JsonException) { node = JsonValue.Create(text); }
+
+        if (!resp.IsSuccessStatusCode)
+        {
+            var msg = node is JsonObject o && o["message"] is JsonValue mv && mv.TryGetValue<string>(out var m) ? m : null;
+            throw SkyBellHttp.CreateException(resp.StatusCode, path, msg, text);
+        }
+        return node;
+    }
+
+    /// <summary>GET counterpart of <see cref="SendRawAsync"/>.</summary>
+    public Task<JsonNode?> GetRawAsync(string path, CancellationToken cancellationToken = default) =>
+        SendRawAsync(HttpMethod.Get, path, null, cancellationToken);
+
+    // =================================================================
     //  Plumbing
     // =================================================================
 

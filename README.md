@@ -1,5 +1,8 @@
 # SkyBellSharp
 
+[![CI](https://github.com/xavave/SkyBellSharp/actions/workflows/ci.yml/badge.svg)](https://github.com/xavave/SkyBellSharp/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/v/SkyBellSharp.svg)](https://www.nuget.org/packages/SkyBellSharp)
+
 Unofficial .NET client for the **SkyBell Gen5** cloud API (`https://api.skybell.network`).
 
 - Authentication: personal API key, email/password (SkyBell login endpoint or Amazon Cognito), automatic token refresh
@@ -7,7 +10,9 @@ Unofficial .NET client for the **SkyBell Gen5** cloud API (`https://api.skybell.
 - Live view: starts WebRTC sessions (Amazon Kinesis Video Streams signaling data, ICE servers, temporary credentials)
 - Snapshots, activity history (paging, per-day previews, video download, deletion)
 - Sharing, webhooks (triggers), tones (catalog, custom upload, test), locations, on-device rules, health
+- Real-time events: `SkyBellEventMonitor` combines local UDP broadcasts with API confirmation and polling
 - Local network: UDP button/motion broadcasts and Wi-Fi provisioning of devices in AP mode
+- Raw access (`GetRawAsync` / `SendRawAsync`) for anything not modelled yet
 
 > **Unofficial project.** Not affiliated with, endorsed by, or supported by SkyBell Technologies, Inc.
 > "SkyBell" is a trademark of its owner. Use it with your own account and respect SkyBell's terms of service.
@@ -90,6 +95,25 @@ var session = await client.StartLiveStreamAsync(door.Id);
 // session.ChannelArn, session.WssEndpoint, session.IceServers, session.Credentials, session.Region
 ```
 
+## Real-time events
+
+`SkyBellEventMonitor` raises doorbell presses and motion as they happen:
+
+- **UDP** (same LAN): a broadcast triggers immediate API lookups (2, 4, 6, 8 s) to get the
+  confirmed activity, its type and preview; if the cloud does not confirm it, an
+  `UdpOnly` event is still raised;
+- **polling** every 60 s (the minimum allowed by SkyBell) as a fallback when away from home.
+
+Each activity is raised once; events older than `Start()` are ignored; live views are skipped.
+
+```csharp
+using var monitor = new SkyBellEventMonitor(client, new SkyBellEventMonitorOptions { DeviceId = door.Id });
+monitor.EventDetected += (_, e) =>
+    Console.WriteLine($"{e.EventType} at {e.Time:T} via {e.Source}"); // e.Activity has the id, preview…
+monitor.CheckFailed += (_, ex) => Console.WriteLine(ex.Message);
+monitor.Start();
+```
+
 ## Local events (UDP)
 
 Devices broadcast a fixed packet on UDP port 5000 when the button is pressed or motion is detected.
@@ -101,6 +125,17 @@ using var udp = new SkyBellUdpListener();
 udp.EventReceived += (_, e) => Console.WriteLine($"{e.Kind} from {e.Source.Address}");
 udp.Start(); // allow inbound UDP in the firewall
 ```
+
+Packets matching the two samples of the SkyBell docs are reported as `ButtonPressed` /
+`MotionDetected`; other SkyBell-formatted packets (encrypted payloads can differ) as `Unidentified`.
+
+## Raw access
+
+```csharp
+JsonNode? shares = await client.GetRawAsync("/api/v5/shares");
+```
+
+Returns the whole JSON response (envelope included) for endpoints or fields the models do not cover.
 
 ## Error handling
 
@@ -127,6 +162,19 @@ Every API failure throws `SkyBellApiException` with `StatusCode`, `ApiMessage`, 
 
 Not covered: legacy SkyBell HD CoAP provisioning, OAuth 2.0 partner flow.
 
+## Sample app
+
+```
+dotnet run --project samples/SkyBellSharp.Sample -- <api-key>          # account, devices, last events
+dotnet run --project samples/SkyBellSharp.Sample -- <api-key> watch    # real-time events
+dotnet run --project samples/SkyBellSharp.Sample -- <api-key> dump     # raw responses -> ./skybell-dump
+dotnet run --project samples/SkyBellSharp.Sample -- udp                # raw UDP broadcasts
+```
+
+`dump` only calls read-only endpoints and redacts secrets and personal data (tokens, keys,
+emails, serials, MAC addresses, coordinates, ids, signed URLs). Attaching those files to an issue
+helps fix models for undocumented responses — review them before sharing.
+
 ## Build & pack
 
 ```
@@ -134,6 +182,11 @@ dotnet build
 dotnet test
 dotnet pack src/SkyBellSharp -c Release -o artifacts
 ```
+
+## Releasing
+
+Pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`: build, tests, pack with that
+version, push to nuget.org (secret `NUGET_API_KEY`) and GitHub release with the packages.
 
 ## License
 
