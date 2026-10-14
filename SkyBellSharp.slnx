@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SkyBellSharp/SkyBellSharp.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/SkyBellSharp.Sample/SkyBellSharp.Sample.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SkyBellSharp.Tests/SkyBellSharp.Tests.csproj" />
+  </Folder>
+</Solution>

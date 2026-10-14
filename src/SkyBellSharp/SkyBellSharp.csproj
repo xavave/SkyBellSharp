@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>SkyBellSharp</RootNamespace>
+    <AssemblyName>SkyBellSharp</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+    <!-- NuGet -->
+    <IsPackable>true</IsPackable>
+    <PackageId>SkyBellSharp</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Xavier A.</Authors>
+    <Description>Unofficial .NET client for the SkyBell Gen5 cloud API (devices, live WebRTC sessions, snapshots, activity history, settings, sharing, webhooks, tones, locations) plus local UDP doorbell/motion events and Wi-Fi provisioning.</Description>
+    <PackageTags>skybell;doorbell;smart-home;api-client;webrtc;kinesis</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/xavave/SkyBellSharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/xavave/SkyBellSharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SkyBellSharp.Tests" />
+  </ItemGroup>
+
+</Project>

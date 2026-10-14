@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+artifacts/
+*.nupkg
+*.snupkg
+TestResults/
+appsettings.local.json
