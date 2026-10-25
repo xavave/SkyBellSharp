@@ -10,3 +10,4 @@ TestResults/
 appsettings.local.json
 skybell-dump/
 skybell-selftest/
+/samples/SkyBellSharp.Sample/Properties/launchSettings.json
